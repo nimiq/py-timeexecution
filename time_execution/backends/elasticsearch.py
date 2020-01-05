@@ -43,21 +43,19 @@ class ElasticsearchBackend(BaseMetricsBackend):
         return self.client.indices.put_template(
             name="timeexecution-{}".format(self.index),
             body={
-                "template": "{}*".format(self.index),
+                "index_patterns": ["{}*".format(self.index)],
                 "mappings": {
-                    self.doc_type: {
-                        "dynamic_templates": [
-                            {"strings": {"mapping": {"type": "keyword"}, "match_mapping_type": "string"}}
-                        ],
-                        "_source": {"enabled": True},
-                        "properties": {
-                            "name": {"type": "keyword"},
-                            "timestamp": {"type": "date"},
-                            "hostname": {"type": "keyword"},
-                            "value": {"type": "float"},
-                            "origin": {"type": "keyword"},
-                        },
-                    }
+                    "dynamic_templates": [
+                        {"strings": {"mapping": {"type": "keyword"}, "match_mapping_type": "string"}}
+                    ],
+                    "_source": {"enabled": True},
+                    "properties": {
+                        "name": {"type": "keyword"},
+                        "timestamp": {"type": "date"},
+                        "hostname": {"type": "keyword"},
+                        "value": {"type": "float"},
+                        "origin": {"type": "keyword"},
+                    },
                 },
                 "settings": {"number_of_shards": "1", "number_of_replicas": "1"},
             },
