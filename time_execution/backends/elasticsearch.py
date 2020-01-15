@@ -12,12 +12,15 @@ logger = logging.getLogger(__name__)
 
 class ElasticsearchBackend(BaseMetricsBackend):
     def __init__(
-        self, hosts=None, index="metrics", doc_type="metric", index_pattern="{index}-{date:%Y.%m.%d}", *args, **kwargs
+        self, hosts=None, index="metrics", doc_type="_doc", index_pattern="{index}-{date:%Y.%m.%d}", *args, **kwargs
     ):
+        # Note that `_type` field is deprecated from ES 7 (and defaulted to the value "_doc").
+        # Src: https://www.elastic.co/guide/en/elasticsearch/reference/7.5/removal-of-types.html
+        # TODO: add a warning here (see warning in `../decorator.py`).
+
         # Assign these in the backend as they are needed when writing metrics
         # to elasticsearch
         self.index = index
-        self.doc_type = doc_type
         self.index_pattern = index_pattern
 
         # setup the client
@@ -75,7 +78,7 @@ class ElasticsearchBackend(BaseMetricsBackend):
             data["timestamp"] = datetime.utcnow()
 
         try:
-            self.client.index(index=self.get_index(), doc_type=self.doc_type, id=None, body=data)
+            self.client.index(index=self.get_index(), id=None, body=data)
         except TransportError as exc:
             logger.warning('writing metric %r failure %r', data, exc)
 
@@ -89,7 +92,7 @@ class ElasticsearchBackend(BaseMetricsBackend):
         actions = []
         index = self.get_index()
         for metric in metrics:
-            actions.append({'index': {'_index': index, '_type': self.doc_type}})
+            actions.append({'index': {'_index': index}})
             actions.append(metric)
         try:
             self.client.bulk(actions)
